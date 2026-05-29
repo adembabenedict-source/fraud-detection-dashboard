@@ -7,9 +7,9 @@ Live app: [Coming after deploy]
 
 ## Features
 - **Real-time metrics**: Total transactions, fraud cases, fraud rate
-- **Visualizations**: 
+- **Visualizations**:
     - Fraud vs Legitimate transaction count
-    - Confusion matrix for model performance  
+    - Confusion matrix for model performance
     - Transaction amount distribution by fraud status
 - **Sample data generator**: Works out-of-the-box with synthetic data
 
