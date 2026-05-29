@@ -1,63 +1,42 @@
-import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report
 
-st.set_page_config(page_title="Fraud Detection Dashboard", layout="wide")
-st.title("Credit Card Fraud Detection Dashboard")
-st.markdown("---")
+# 1. Create reports folder
+os.makedirs('reports', exist_ok=True)
 
-# 1. Generate sample data
+# 2. Generate realistic sample fraud data
 np.random.seed(42)
-n_samples = 1000
+n_samples = 5000
+n_fraud = int(n_samples * 0.03) # 3% fraud rate = imbalanced
+
+# Normal transactions
+normal_amount = np.random.exponential(50, n_samples - n_fraud)
+normal_hour = np.random.randint(8, 20, n_samples - n_fraud) # business hours
+
+# Fraud transactions
+fraud_amount = np.random.exponential(200, n_fraud) # higher amounts
+fraud_hour = np.random.randint(0, 24, n_fraud) # any time
+
+# Combine
+amount = np.concatenate([normal_amount, fraud_amount])
+hour = np.concatenate([normal_hour, fraud_hour])
+fraud = np.array([0]*(n_samples - n_fraud) + [1]*n_fraud)
+
 df = pd.DataFrame({
-    'Amount': np.random.exponential(80, n_samples).round(2),
-    'Hour': np.random.randint(0, 24, n_samples),
-    'Fraud': np.random.choice([0, 1], n_samples, p=[0.97, 0.03])
+    'Amount': amount.round(2),
+    'Hour': hour,
+    'Fraud': fraud
 })
 
-# 2. Top metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Transactions", f"{len(df):,}")
-col2.metric("Fraud Cases", f"{df['Fraud'].sum()}")
-col3.metric("Fraud Rate", f"{df['Fraud'].mean()*100:.2f}%")
+# 3. Train simple model for demo
+X = df[['Amount', 'Hour']]
+y = df['Fraud']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
 
-st.markdown("---")
-
-# 3. Graphs row 1
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("1. Fraud vs Legitimate Count")
-    fig, ax = plt.subplots(figsize=(6,4))
-    fraud_counts = df['Fraud'].value_counts().sort_index()
-    ax.bar(['Legitimate', 'Fraud'], fraud_counts, color=['#2ecc71', '#e74c3c'])
-    ax.set_ylabel('Number of Transactions')
-    for i, v in enumerate(fraud_counts):
-        ax.text(i, v + 5, str(v), ha='center', fontweight='bold')
-    st.pyplot(fig)
-
-with col2:
-    st.subheader("2. Confusion Matrix")
-    y_pred = np.random.choice([0, 1], n_samples, p=[0.975, 0.025])
-    cm = confusion_matrix(df['Fraud'], y_pred)
-    fig, ax = plt.subplots(figsize=(6,4))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                xticklabels=['Legit', 'Fraud'], 
-                yticklabels=['Legit', 'Fraud'], ax=ax)
-    ax.set_xlabel('Predicted')
-    ax.set_ylabel('Actual')
-    st.pyplot(fig)
-
-# 4. Graph row 2
-st.subheader("3. Transaction Amount by Fraud Status")
-fig, ax = plt.subplots(figsize=(10,4))
-sns.boxplot(data=df, x='Fraud', y='Amount', ax=ax, hue='Fraud', 
-            palette=['#2ecc71', '#e74c3c'], legend=False)
-ax.set_xticks([0, 1])
-ax.set_xticklabels(['Legitimate', 'Fraud'])
-ax.set_ylabel('Amount ($)')
-ax.set_xlabel('')
-st.pyplot(fig)
+model = RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced
