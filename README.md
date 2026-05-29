@@ -22,7 +22,7 @@ git clone https://github.com/adembabenedict-source/fraud-detection-dashboard.git
 cd fraud-detection-dashboard
 pip install -r requirements.txt
 streamlit run app.py
-
+'''
 ## Model Performance
 
 **Results:** 93% Accuracy | 88% Precision | AUC = 0.81
