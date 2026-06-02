@@ -1,13 +1,14 @@
 import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+import os
 
 df = pd.read_csv('transactions.csv')
-X = df.drop('is_fraud', axis=1) 
+X = df.drop('is_fraud', axis=1)
 y = df['is_fraud']
 
-model = RandomForestClassifier()
+model = RandomForestClassifier(n_estimators=100)
 model.fit(X, y)
 
 joblib.dump(model, 'fraud_model.pkl', compress=9)
-print("New model saved. Size should be 200KB+")
+print("SUCCESS. File size:", os.path.getsize('fraud_model.pkl'), "bytes")
