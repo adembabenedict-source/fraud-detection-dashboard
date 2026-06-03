@@ -10,14 +10,21 @@ st.set_page_config(page_title="Fraud Detection", layout="wide")
 st.title("Credit Card Fraud Detection Dashboard")
 st.write("Loading real transaction data...")
 
-# Load CSV with UTF-16 encoding for Windows/Excel files
+# Load CSV - handle UTF-16 + tab separated + transposed
 try:
-    df = pd.read_csv('transactions.csv', encoding='utf-16')
-except UnicodeDecodeError:
-    df = pd.read_csv('transactions.csv', encoding='utf-8-sig')
-except Exception as e:
-    st.error(f"Could not load CSV: {e}")
-    st.stop()
+    df = pd.read_csv('transactions.csv', encoding='utf-16', sep=None, engine='python')
+except:
+    df = pd.read_csv('transactions.csv', encoding='utf-8-sig', sep=None, engine='python')
+
+# Fix if CSV is transposed
+if df.shape[1] == 1 and df.columns[0].lower() == 'amount':
+    df = df.T
+    df.columns = df.iloc[0]
+    df = df.drop(df.index[0]).reset_index(drop=True)
+
+# Standardize column names
+df.columns = df.columns.str.lower().str.replace(' ', '_')
+df = df.rename(columns={'is_fraud': 'Fraud', 'transaction_type': 'type'})
 
 st.success(f"Loaded {len(df)} transactions from CSV")
 st.dataframe(df.head())
@@ -30,8 +37,12 @@ except Exception as e:
     st.stop()
 
 # Make predictions
+if 'Fraud' not in df.columns:
+    st.error("Column 'Fraud' not found. Available columns: " + str(list(df.columns)))
+    st.stop()
+
 X = df.drop('Fraud', axis=1)
-y_true = df['Fraud']
+y_true = df['Fraud'].astype(int)
 y_pred = model.predict(X)
 
 # Metrics
