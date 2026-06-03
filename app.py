@@ -10,59 +10,41 @@ import os
 st.set_page_config(page_title="Fraud Detection", layout="wide")
 st.title("Credit Card Fraud Detection Dashboard")
 
-st.write("Checking files...")
+# Check files exist
 if not os.path.exists('transactions.csv'):
-    st.error("transactions.csv not found")
+    st.error("transactions.csv not found in repo")
+    st.stop()
+if not os.path.exists('fraud_model.pkl'):
+    st.error("fraud_model.pkl not found in repo")
     st.stop()
 
-# Show raw file content to debug
-st.subheader("Raw file preview")
-with open('transactions.csv', 'rb') as f:
-    raw_bytes = f.read(500)
-    st.code(f"First 500 bytes: {raw_bytes}")
-    
-with open('transactions.csv', 'r', encoding='utf-16-le', errors='replace') as f:
-    lines = [f.readline() for _ in range(5)]
-    st.code("First 5 lines with utf-16-le:\n" + ''.join(lines))
-
-# Try loading with explicit tab separator
 st.subheader("Loading CSV")
-try:
-    df = pd.read_csv('transactions.csv', encoding='utf-16-le', sep='\t', engine='python')
-    st.write("Success: utf-16-le + tab")
-except Exception as e:
-    st.error(f"Load failed: {e}")
-    st.stop()
+# Step 1: Read transposed Excel UTF-16 file with header=None
+df_raw = pd.read_csv('transactions.csv', encoding='utf-16-le', sep='\t', header=None, engine='python')
+st.write(f"Raw shape: {df_raw.shape}")
 
-st.write(f"Shape: {df.shape}")
-st.write("Columns:", list(df.columns))
+# Step 2: Transpose - your CSV is sideways
+df = df_raw.T
+st.write("Transposed CSV detected - fixing...")
 
-if df.empty:
-    st.error("DataFrame is empty. Check your CSV file - it might have no data rows.")
-    st.stop()
+# Step 3: Set first row as column headers
+df.columns = df.iloc[0]
+df = df.drop(df.index[0]).reset_index(drop=True)
 
-# Fix transpose if needed
-if df.shape[1] == 1 and len(str(df.columns[0])) < 5:
-    st.write("Detected transposed CSV, fixing...")
-    df = df.T
-    df.columns = df.iloc[0]
-    df = df.drop(df.index[0]).reset_index(drop=True)
+st.write(f"Fixed shape: {df.shape}")
 
-# Standardize
+# Step 4: Standardize column names
 df.columns = df.columns.astype(str).str.lower().str.strip().str.replace(' ', '_')
 df = df.rename(columns={'is_fraud': 'Fraud', 'transaction_type': 'type', 'fraud': 'Fraud'})
 
 st.success(f"Loaded {len(df)} transactions")
-# Convert to string to avoid pyarrow errors
+st.write("Columns:", list(df.columns))
 st.dataframe(df.astype(str).head())
 
 # Load model
-if not os.path.exists('fraud_model.pkl'):
-    st.error("fraud_model.pkl not found")
-    st.stop()
-    
 model = joblib.load('fraud_model.pkl')
 
+# Make predictions
 if 'Fraud' not in df.columns:
     st.error(f"Column 'Fraud' not found. Got: {list(df.columns)}")
     st.stop()
@@ -75,13 +57,26 @@ X = X.fillna(0)
 y_true = df['Fraud'].astype(int)
 y_pred = model.predict(X)
 
+# Metrics
 st.subheader("Model Performance")
 col1, col2 = st.columns(2)
+
 with col1:
     st.text("Classification Report:")
     st.code(classification_report(y_true, y_pred))
+
 with col2:
     st.text("Confusion Matrix:")
     fig, ax = plt.subplots()
     sns.heatmap(confusion_matrix(y_true, y_pred), annot=True, fmt='d', cmap='Blues', ax=ax)
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('Actual')
     st.pyplot(fig)
+
+# Fraud distribution
+st.subheader("Data Distribution")
+fig2, ax2 = plt.subplots()
+df['Fraud'].value_counts().plot(kind='bar', ax=ax2)
+ax2.set_title('Fraud vs Legitimate Transactions')
+ax2.set_xticklabels(['Legitimate', 'Fraud'], rotation=0)
+st.pyplot(fig2)
