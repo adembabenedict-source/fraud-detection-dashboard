@@ -18,20 +18,19 @@ if not os.path.exists('fraud_model.pkl'):
     st.stop()
 
 st.subheader("Loading CSV")
-# Read as single column - no tabs in this file
+# Your file is UTF-16-LE, 1 value per line
 df_raw = pd.read_csv('transactions.csv', encoding='utf-16-le', header=None)
 st.write(f"Raw shape: {df_raw.shape}")
 
-# First 4 rows are the column names
+# First 4 rows are headers: amount, time, Fraud, Type
 headers = df_raw.iloc[0:4, 0].tolist()
 st.write("Detected headers:", headers)
 
 # Remaining rows are data, reshape into 4 columns
 data_values = df_raw.iloc[4:, 0].values
-num_cols = len(headers) # Should be 4
+num_cols = len(headers)
 num_rows = len(data_values) // num_cols
 
-# Reshape the flat list into rows x cols
 df = pd.DataFrame(data_values.reshape(num_rows, num_cols), columns=headers)
 st.write(f"Fixed shape: {df.shape}")
 
@@ -54,8 +53,3 @@ X = df.drop('Fraud', axis=1)
 for col in X.columns:
     X[col] = pd.to_numeric(X[col], errors='coerce')
 X = X.fillna(0)
-
-y_true = df['Fraud'].astype(int)
-y_pred = model.predict(X)
-
-st.subheader("Model
