@@ -44,4 +44,16 @@ with col1:
 
 with col2:
     st.text("Confusion Matrix:")
-    fig
+    fig, ax = plt.subplots()
+    sns.heatmap(confusion_matrix(y_true, y_pred), annot=True, fmt='d', cmap='Blues', ax=ax)
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('Actual')
+    st.pyplot(fig)
+
+# Fraud distribution
+st.subheader("Data Distribution")
+fig2, ax2 = plt.subplots()
+df['Fraud'].value_counts().plot(kind='bar', ax=ax2)
+ax2.set_title('Fraud vs Legitimate Transactions')
+ax2.set_xticklabels(['Legitimate', 'Fraud'], rotation=0)
+st.pyplot(fig2)
