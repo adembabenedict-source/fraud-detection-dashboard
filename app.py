@@ -10,24 +10,38 @@ st.set_page_config(page_title="Fraud Detection", layout="wide")
 st.title("Credit Card Fraud Detection Dashboard")
 st.write("Loading real transaction data...")
 
-# Load CSV - handle UTF-16 + tab separated + transposed
-try:
-    df = pd.read_csv('transactions.csv', encoding='utf-16', sep=None, engine='python')
-except:
-    df = pd.read_csv('transactions.csv', encoding='utf-8-sig', sep=None, engine='python')
-
-# Fix if CSV is transposed
-if df.shape[1] == 1 and df.columns[0].lower() == 'amount':
+# Robust CSV loader for Excel UTF-16 files
+def load_csv_robust():
+    encodings = ['utf-16', 'utf-16-le', 'utf-8-sig']
+    seps = ['\t', ',', ';']
+    
+    for enc in encodings:
+        for sep in seps:
+            try:
+                df = pd.read_csv('transactions.csv', encoding=enc, sep=sep, engine='python')
+                # Check if we got real columns
+                if df.shape[1] > 1 and 'amount' in str(df.columns[0]).lower():
+                    st.write(f"Success: encoding={enc}, sep={repr(sep)}")
+                    return df
+            except:
+                continue
+    
+    # Fallback: read and transpose
+    df = pd.read_csv('transactions.csv', encoding='utf-16-le', header=None)
     df = df.T
     df.columns = df.iloc[0]
     df = df.drop(df.index[0]).reset_index(drop=True)
+    return df
+
+df = load_csv_robust()
 
 # Standardize column names
-df.columns = df.columns.str.lower().str.replace(' ', '_')
-df = df.rename(columns={'is_fraud': 'Fraud', 'transaction_type': 'type'})
+df.columns = df.columns.astype(str).str.lower().str.strip().str.replace(' ', '_')
+df = df.rename(columns={'is_fraud': 'Fraud', 'transaction_type': 'type', 'fraud': 'Fraud'})
 
 st.success(f"Loaded {len(df)} transactions from CSV")
 st.dataframe(df.head())
+st.write("Columns found:", list(df.columns))
 
 # Load trained model
 try:
@@ -41,7 +55,12 @@ if 'Fraud' not in df.columns:
     st.error("Column 'Fraud' not found. Available columns: " + str(list(df.columns)))
     st.stop()
 
+# Convert all feature columns to numeric
 X = df.drop('Fraud', axis=1)
+for col in X.columns:
+    X[col] = pd.to_numeric(X[col], errors='coerce')
+X = X.fillna(0)
+
 y_true = df['Fraud'].astype(int)
 y_pred = model.predict(X)
 
