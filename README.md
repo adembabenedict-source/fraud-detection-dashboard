@@ -1,24 +1,20 @@
-# Credit Card Fraud Detection Dashboard
+# Fraud Detection Dashboard
 
-Interactive Streamlit dashboard that visualizes credit card transaction data to identify fraud patterns.
+Real-time credit card fraud detection using machine learning. Upload a CSV and get instant fraud predictions with probability scores.
 
-## Demo
-Live app: [Coming after deploy]
+**Live Demo:** [Add your Streamlit link here after deployment]
 
-## Features
-- **Real-time metrics**: Total transactions, fraud cases, fraud rate
-- **Visualizations**: 
-    - Fraud vs Legitimate transaction count
-    - Confusion matrix for model performance  
-    - Transaction amount distribution by fraud status
-- **Sample data generator**: Works out-of-the-box with synthetic data
+### Features
+- File upload for batch predictions
+- Probability scores + risk levels 
+- Downloadable results
+- Production-ready with Docker
+- Unit tested
 
-## Tech Stack
-Python, Streamlit, Pandas, Matplotlib, Seaborn, Scikit-learn
+### Tech Stack
+Python, Streamlit, Scikit-learn, Pandas, Docker
 
-## Run Locally
+### Run Locally
 ```bash
-git clone https://github.com/adembabenedict-source/fraud-detection-dashboard.git
-cd fraud-detection-dashboard
 pip install -r requirements.txt
 streamlit run app.py
