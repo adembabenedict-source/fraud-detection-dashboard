@@ -10,11 +10,11 @@ st.set_page_config(page_title="Fraud Detection", layout="wide")
 st.title("Credit Card Fraud Detection Dashboard")
 st.write("Loading real transaction data...")
 
-# Load CSV with encoding fallback for Windows/Excel files
+# Load CSV with UTF-16 encoding for Windows/Excel files
 try:
-    df = pd.read_csv("transactions.csv", encoding="utf-8-sig")
+    df = pd.read_csv('transactions.csv', encoding='utf-16')
 except UnicodeDecodeError:
-    df = pd.read_csv("transactions.csv", encoding="latin1")
+    df = pd.read_csv('transactions.csv', encoding='utf-8-sig')
 except Exception as e:
     st.error(f"Could not load CSV: {e}")
     st.stop()
@@ -24,22 +24,24 @@ st.dataframe(df.head())
 
 # Load trained model
 try:
-    model = joblib.load("fraud_model.pkl")
-    st.write("Model loaded successfully")
-except FileNotFoundError:
-    st.error("fraud_model.pkl not found. Push it to GitHub.")
+    model = joblib.load('fraud_model.pkl')
+except Exception as e:
+    st.error(f"Could not load model: {e}")
     st.stop()
 
-# Show basic stats
-st.subheader("Dataset Overview")
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Transactions", len(df))
-col2.metric("Fraud Cases", int(df['Fraud'].sum()))
-col3.metric("Fraud Rate", f"{df['Fraud'].mean()*100:.2f}%")
+# Make predictions
+X = df.drop('Fraud', axis=1)
+y_true = df['Fraud']
+y_pred = model.predict(X)
 
-# Plot fraud distribution
-st.subheader("Fraud vs Legitimate")
-fig, ax = plt.subplots()
-sns.countplot(data=df, x='Fraud', ax=ax)
-ax.set_xticklabels(['Legitimate', 'Fraud'])
-st.pyplot(fig)
+# Metrics
+st.subheader("Model Performance")
+col1, col2 = st.columns(2)
+
+with col1:
+    st.text("Classification Report:")
+    st.text(classification_report(y_true, y_pred))
+
+with col2:
+    st.text("Confusion Matrix:")
+    fig
