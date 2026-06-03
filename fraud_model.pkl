@@ -1,14 +1,3 @@
-import joblib
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-import os
-
-df = pd.read_csv('transactions.csv')
-X = df.drop('is_fraud', axis=1)
-y = df['is_fraud']
-
-model = RandomForestClassifier(n_estimators=100)
-model.fit(X, y)
-
-joblib.dump(model, 'fraud_model.pkl', compress=9)
-print("SUCCESS. File size:", os.path.getsize('fraud_model.pkl'), "bytes")
+version https://git-lfs.github.com/spec/v1
+oid sha256:87e3207342ca663da066ba1fcb15919f1b5c1ac98f49c21997fd0bb37c72faa1
+size 74825
