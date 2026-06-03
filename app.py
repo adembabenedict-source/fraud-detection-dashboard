@@ -10,7 +10,6 @@ import os
 st.set_page_config(page_title="Fraud Detection", layout="wide")
 st.title("Credit Card Fraud Detection Dashboard")
 
-# Check files exist
 if not os.path.exists('transactions.csv'):
     st.error("transactions.csv not found in repo")
     st.stop()
@@ -19,21 +18,24 @@ if not os.path.exists('fraud_model.pkl'):
     st.stop()
 
 st.subheader("Loading CSV")
-# Step 1: Read transposed Excel UTF-16 file with header=None
-df_raw = pd.read_csv('transactions.csv', encoding='utf-16-le', sep='\t', header=None, engine='python')
+# Read as single column - no tabs in this file
+df_raw = pd.read_csv('transactions.csv', encoding='utf-16-le', header=None)
 st.write(f"Raw shape: {df_raw.shape}")
 
-# Step 2: Transpose - your CSV is sideways
-df = df_raw.T
-st.write("Transposed CSV detected - fixing...")
+# First 4 rows are the column names
+headers = df_raw.iloc[0:4, 0].tolist()
+st.write("Detected headers:", headers)
 
-# Step 3: Set first row as column headers
-df.columns = df.iloc[0]
-df = df.drop(df.index[0]).reset_index(drop=True)
+# Remaining rows are data, reshape into 4 columns
+data_values = df_raw.iloc[4:, 0].values
+num_cols = len(headers) # Should be 4
+num_rows = len(data_values) // num_cols
 
+# Reshape the flat list into rows x cols
+df = pd.DataFrame(data_values.reshape(num_rows, num_cols), columns=headers)
 st.write(f"Fixed shape: {df.shape}")
 
-# Step 4: Standardize column names
+# Standardize column names
 df.columns = df.columns.astype(str).str.lower().str.strip().str.replace(' ', '_')
 df = df.rename(columns={'is_fraud': 'Fraud', 'transaction_type': 'type', 'fraud': 'Fraud'})
 
@@ -44,7 +46,6 @@ st.dataframe(df.astype(str).head())
 # Load model
 model = joblib.load('fraud_model.pkl')
 
-# Make predictions
 if 'Fraud' not in df.columns:
     st.error(f"Column 'Fraud' not found. Got: {list(df.columns)}")
     st.stop()
@@ -57,26 +58,4 @@ X = X.fillna(0)
 y_true = df['Fraud'].astype(int)
 y_pred = model.predict(X)
 
-# Metrics
-st.subheader("Model Performance")
-col1, col2 = st.columns(2)
-
-with col1:
-    st.text("Classification Report:")
-    st.code(classification_report(y_true, y_pred))
-
-with col2:
-    st.text("Confusion Matrix:")
-    fig, ax = plt.subplots()
-    sns.heatmap(confusion_matrix(y_true, y_pred), annot=True, fmt='d', cmap='Blues', ax=ax)
-    ax.set_xlabel('Predicted')
-    ax.set_ylabel('Actual')
-    st.pyplot(fig)
-
-# Fraud distribution
-st.subheader("Data Distribution")
-fig2, ax2 = plt.subplots()
-df['Fraud'].value_counts().plot(kind='bar', ax=ax2)
-ax2.set_title('Fraud vs Legitimate Transactions')
-ax2.set_xticklabels(['Legitimate', 'Fraud'], rotation=0)
-st.pyplot(fig2)
+st.subheader("Model
