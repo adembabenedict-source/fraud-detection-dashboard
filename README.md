@@ -2,7 +2,7 @@
 
 Real-time credit card fraud detection using machine learning. Upload a CSV and get instant fraud predictions with probability scores.
 
-**Live Demo:** [Add your Streamlit link here after deployment]
+**Live Demo:** [https://fraud-detection-dashboard-du6zavqunjrmd8mztlfgjg.streamlit.app/]
 
 ### Features
 - File upload for batch predictions
